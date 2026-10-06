@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prueba del formulario · Cancha 3</title>
+<style>
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;padding:20px 16px 40px;background:#000;color:#fff;font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:520px;margin:0 auto}
+h1{font-size:22px;margin:0 0 6px}
+p{color:#bbb;margin:6px 0 14px}
+button{display:block;width:100%;margin:10px 0;padding:14px 16px;border:0;border-radius:12px;background:#c9a06e;color:#1c1409;font:600 16px/1.2 inherit;min-height:48px;cursor:pointer;text-align:left}
+button small{display:block;font-weight:400;opacity:.8;margin-top:3px}
+#log{margin-top:18px;padding:12px;border:1px solid #333;border-radius:12px;background:#111;font:13px/1.6 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;min-height:60px}
+iframe{display:none}
+a.b{display:block;margin:10px 0;padding:14px 16px;border-radius:12px;background:#c9a06e;color:#1c1409;font-weight:600;text-decoration:none;min-height:48px}
+</style>
+</head>
+<body><main>
+<h1>Prueba del formulario</h1>
+<p>Toca cada botón una vez. Después abre la hoja de respuestas y mira qué filas aparecieron. Cada fila dice qué método la envió.</p>
+
+<button id="a" type="button">Método A<small>Envío directo (el que usa la carta hoy)</small></button>
+<button id="b" type="button">Método B<small>Envío clásico por formulario oculto</small></button>
+<button id="c" type="button">Método C<small>Envío directo en otro formato</small></button>
+<a class="b" id="d" href="#" target="_blank" rel="noopener">Método D<br><small>Abre el formulario ya escrito. Tú tocas Enviar.</small></a>
+
+<div id="log">Aquí aparecerá lo que se va enviando.</div>
+<iframe name="oculto" id="oculto" title="envío oculto"></iframe>
+</main>
+<script>
+const ID = "1FAIpQLSfr5E5fCUB12Q_09MCYEA6JP2ykw2Na4cB4ZPiSjh36N3a1hQ";
+const ACTION = "https://docs.google.com/forms/d/e/" + ID + "/formResponse";
+const E_NOMBRE = "entry.658583770", E_PEDIDO = "entry.893361318";
+const log = t => { const l = document.getElementById("log"); l.textContent += "\n" + new Date().toLocaleTimeString("es-CL") + "  " + t; };
+const txt = m => ["PRUEBA " + m, "1 x Completo italiano (prueba, borrar esta fila)"];
+document.getElementById("log").textContent = "";
+
+document.getElementById("a").onclick = async () => {
+  const [n, p] = txt("A");
+  try{
+    const body = new URLSearchParams(); body.set(E_NOMBRE, n); body.set(E_PEDIDO, p);
+    await fetch(ACTION, {method:"POST", mode:"no-cors", headers:{"Content-Type":"application/x-www-form-urlencoded"}, body});
+    log("A: enviado (no significa que llegó; míralo en la hoja)");
+  }catch(e){ log("A: ERROR de red: " + e.message); }
+};
+document.getElementById("b").onclick = () => {
+  const [n, p] = txt("B");
+  const f = document.createElement("form"); f.method = "POST"; f.action = ACTION; f.target = "oculto"; f.style.display = "none";
+  const add = (k, v) => { const i = document.createElement("input"); i.type = "hidden"; i.name = k; i.value = v; f.appendChild(i); };
+  add(E_NOMBRE, n); add(E_PEDIDO, p); add("fvv", "1"); add("pageHistory", "0");
+  document.body.appendChild(f); f.submit(); f.remove();
+  log("B: enviado (no significa que llegó; míralo en la hoja)");
+};
+document.getElementById("c").onclick = async () => {
+  const [n, p] = txt("C");
+  try{
+    const fd = new FormData(); fd.append(E_NOMBRE, n); fd.append(E_PEDIDO, p); fd.append("fvv", "1"); fd.append("pageHistory", "0");
+    await fetch(ACTION, {method:"POST", mode:"no-cors", body: fd});
+    log("C: enviado (no significa que llegó; míralo en la hoja)");
+  }catch(e){ log("C: ERROR de red: " + e.message); }
+};
+const d = document.getElementById("d");
+const [dn, dp] = txt("D");
+d.href = "https://docs.google.com/forms/d/e/" + ID + "/viewform?usp=pp_url&" + E_NOMBRE + "=" + encodeURIComponent(dn) + "&" + E_PEDIDO + "=" + encodeURIComponent(dp);
+d.addEventListener("click", () => log("D: se abrió el formulario; toca Enviar ahí"));
+</script>
+</body></html>
