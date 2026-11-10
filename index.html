@@ -222,7 +222,7 @@ a.btn{text-decoration:none}
 
 <section class="wrap sec" id="album" aria-labelledby="album-t">
   <div class="sec-h"><h2 id="album-t">Álbum Cancha 3</h2><i></i></div>
-  <p class="album-intro">Cada vez que pides, desbloqueas la carta de lo que probaste. Junta las <span id="tot-c">9</span>.</p>
+  <p class="album-intro">Cada vez que pides, ganas una carta sorpresa al azar. Junta las <span id="tot-c">10</span>.</p>
   <div class="prog"><b id="prog-n">0/8</b><div class="bar"><i id="prog-bar"></i></div></div>
   <div class="grid" id="grid"></div>
   <div class="premio" id="premio"></div>
@@ -312,8 +312,8 @@ const CFG = {
     {
       "id": "chuleta",
       "cat": "hamburguesas",
-      "nombre": "Hamburguesa venezolana chuleta ahumada",
-      "desc": "Chuleta ahumada, tocino, lechuga, tomate, cebolla, papa hilo, queso cheddar y queso gauda.",
+      "nombre": "Hamburguesa chuleta ahumada",
+      "desc": "Chuleta ahumada de cerdo, tocino, lechuga, tomate, cebolla, papa hilo, queso cheddar y queso gauda.",
       "precio": 5500,
       "foto": "hamburguesa_chuleta"
     },
@@ -480,7 +480,7 @@ const CFG = {
       "id": "chuleta",
       "num": 8,
       "apodo": "Smash",
-      "producto": "Hamburguesa venezolana chuleta ahumada",
+      "producto": "Hamburguesa chuleta ahumada",
       "foto": "hamburguesa_chuleta"
     },
     {
@@ -496,13 +496,6 @@ const CFG = {
       "apodo": "Globo",
       "producto": "Bebidas",
       "foto": "bebidas_con_fanta"
-    },
-    {
-      "id": "salchipapa",
-      "num": 11,
-      "apodo": "Bajada de pared",
-      "producto": "Salchipapa",
-      "foto": "salchipapa"
     }
   ]
 };
@@ -532,6 +525,7 @@ if(ES_MESON){
 }
 let cart = {}; let nombre = ES_MESON ? "" : store.get("c3_nombre", ""); let modo = "Para llevar"; let notas = "";
 let album = store.get("c3_album", {abiertas: [], pedidos: 0});
+album.abiertas = (album.abiertas || []).filter(id => CFG.cartas.some(c => c.id === id));
 const isNum = v => typeof v === "number" && isFinite(v);
 
 function lineName(p, v){ return v ? ((p.id === "bebida" || p.id === "cafe") ? v.n : p.nombre + " " + v.n.toLowerCase()) : p.nombre; }
@@ -713,8 +707,9 @@ async function submit(){
 function desbloquear(){
   if(ES_CANAL) return;
   if(!done || done.listo) return; if(conectado && !done.enviado) return; done.listo = true;
-  const nuevas = []; const ids = new Set(done.ls.map(l => l.id));
-  CARDS.forEach(c => { if(ids.has(c.id) && !album.abiertas.includes(c.id)){ album.abiertas.push(c.id); nuevas.push(c); } });
+  /* un pedido = una carta sorpresa al azar, de las que todavía no tiene (da igual qué compró) */
+  const nuevas = []; const faltan = CARDS.filter(c => !album.abiertas.includes(c.id));
+  if(faltan.length){ const c = faltan[Math.floor(Math.random() * faltan.length)]; album.abiertas.push(c.id); nuevas.push(c); }
   album.pedidos++; store.set("c3_album", album); renderAlbum();
   if(nuevas.length) showRev(nuevas);
 }
@@ -746,7 +741,7 @@ function cartaEl(c, abierta){
   const num = String(c.num).padStart(2, "0");
   if(!abierta){
     el.className = "carta lock";
-    el.innerHTML = '<div class="n">' + num + '</div><p>Pide <b>' + c.producto + '</b> para desbloquearla</p>';
+    el.innerHTML = '<div class="n">' + num + '</div><p><b>Carta sorpresa</b><br>Pide y la descubres</p>';
     return el;
   }
   el.className = "carta open";
@@ -758,7 +753,7 @@ function cartaEl(c, abierta){
 function renderAlbum(){
   const g = $("#grid"); g.innerHTML = "";
   CARDS.forEach(c => g.appendChild(cartaEl(c, album.abiertas.includes(c.id))));
-  const n = album.abiertas.length, tot = CARDS.length;
+  const n = CARDS.filter(c => album.abiertas.includes(c.id)).length, tot = CARDS.length;
   $("#prog-n").textContent = n + "/" + tot; $("#prog-bar").style.width = (100 * n / tot) + "%";
   const pr = $("#premio"); const comp = n >= tot;
   pr.className = "premio" + (comp ? " ok" : "");
